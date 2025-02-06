@@ -1,5 +1,5 @@
 help([[
-Build environment for fit2obs on Gaea
+Build environment for fit2obs on Gaea C5
 ]])
 
 prepend_path("MODULEPATH", "/ncrc/proj/epic/spack-stack/spack-stack-1.6.0/envs/gsi-addon-dev/install/modulefiles/Core")
