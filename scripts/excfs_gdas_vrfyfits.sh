@@ -113,7 +113,7 @@ do
 FDATE=$(date --utc +%Y%m%d%H -d "${PDY} ${cyc} - ${fh} hours")
 fdy=${FDATE:0:8}
 fzz=${FDATE:8:2}
-export COMIN_HISTORY="${COM_VRFYARCH:?}/${RUN:?}.${fdy}/${fzz}"
+export COMIN_HISTORY="${COM_VRFYARCH:-${ROTDIR}}/${RUN:?}.${fdy}/${fzz}"
 
 if [[ $OUTPUT_FILETYPE = nemsio || $OUTPUT_FILETYPE = netcdf ]] ; then
   fhm3=$((fh-$tspan)); [ $fhm3 -lt 10 ] && fhm3=0$fhm3; [ $fhm3 -lt 100 ] && fhm3=0$fhm3
