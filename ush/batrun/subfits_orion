@@ -1,7 +1,12 @@
 #!/bin/bash
 set -euax
 
-EXPNAM=$1 CDATE=$2 COMROT=${3:-$STMP/$USER} ARCDIR=${4:-$COMROT/archive} TMPDIR=${5:-$STMP/$USER/tmpdir}
+EXPNAM=$1
+PDY=$2
+cyc=$3
+COMROT=${4:-$STMP/$USER}
+ARCDIR=${5:-$COMROT/archive}
+TMPDIR=${6:-$STMP/$USER/tmpdir}
 
 ACCOUNT=${ACCOUNT:-nems}
 CUE2RUN=${CUE2RUN:-batch}
@@ -10,23 +15,24 @@ KEEPDATA=${KEEPDATA:-NO}
 [[ $CUE2RUN == batch ]] && PART=orion
 [[ $CUE2RUN == debug ]] && PART=debug
 
-vday=$(echo $CDATE | cut -c1-8)
-vcyc=$(echo $CDATE | cut -c9-10)
+vday=${PDY}
+vcyc=${cyc}
 
 echo -------------------------------------------------------------------------------------------------------------------
 echo Starting the runfits for:
 echo -------------------------------------------------------------------------------------------------------------------
 echo "EXPNAM    " $EXPNAM       # argument 1 - experiment name    - required  (can be prod in which case COMROT is moot)
-echo "CDATE     " $CDATE        # argument 2 - date of validation - required 
-echo "COMROT    " $COMROT       # argument 3 - COMROT directory   - optional - defaults to /stmp/$USER
-echo "ARCDIR    " $ARCDIR       # argument 4 - ARCDIR directory   - optional - defaults to $COMROT/archive 
-echo "TMPDIR    " $TMPDIR       # argument 5 - TMPDIR directory   - optional - defaults to /stmp/$USER/tmpdir
-echo "ACCOUNT   " $ACCOUNT      # inherited  - project code       - required - defaults to nothing  
+echo "PDY       " $PDY          # argument 2 - date of validation - required
+echo "cyc       " $cyc          # argument 3 - cycle of validation - required
+echo "COMROT    " $COMROT       # argument 4 - COMROT directory   - optional - defaults to /stmp/$USER
+echo "ARCDIR    " $ARCDIR       # argument 5 - ARCDIR directory   - optional - defaults to $COMROT/archive
+echo "TMPDIR    " $TMPDIR       # argument 6 - TMPDIR directory   - optional - defaults to /stmp/$USER/tmpdir
+echo "ACCOUNT   " $ACCOUNT      # inherited  - project code       - required - defaults to nothing
 echo "KEEPDATA  " $KEEPDATA     # inherited  - retain rundir      - optional - defaults to NO (rmdir)
 echo -------------------------------------------------------------------------------------------------------------------
 
 fitdir=$(dirname $0); fitdir=$(cd $fitdir; pwd)
-LOGDIR=${LOGDIR:-$COMROT/logs/$CDATE}
+LOGDIR=${LOGDIR:-$COMROT/logs/${PDY}${cyc}}
 
 set -euax          
 
@@ -35,9 +41,9 @@ unset TMPDIR
 
 cat<<EOF | sbatch
 #!/bin/bash
-#SBATCH --job-name=FITS.$EXPNAM.$CDATE --time=20:00
+#SBATCH --job-name=FITS.$EXPNAM.${PDY}${cyc} --time=20:00
 #SBATCH --nodes=1 --ntasks=3
-#SBATCH --output=$LOGDIR/FITS.$EXPNAM.$CDATE.$$
+#SBATCH --output=$LOGDIR/FITS.$EXPNAM.${PDY}${cyc}.$$
 #SBATCH --account=$ACCOUNT
 #SBATCH --partition=$PART 
 #SBATCH --qos $CUE2RUN
@@ -55,7 +61,6 @@ set -x
 export OMP_NUM_THREADS=${FITOMP:-1}
 export MPIRUN="srun --export=ALL -n 3"
 
-export CDATE=$CDATE
 export EXP=$EXPNAM
 export COMPONENT=${COMPONENT:-atmos}
 export COMIN=$ROTDIR
@@ -67,6 +72,6 @@ export TMPDIR=$vrfytmpdiris
 export ACPROFit=${ACPROFit:-YES}
 export NEMS=${NEMS:-YES}
 
-time $fitdir/runfits $EXPNAM $CDATE $COMROT
+time $fitdir/runfits $EXPNAM ${PDY} ${cyc} $COMROT
 
 EOF

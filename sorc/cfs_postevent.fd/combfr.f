@@ -113,7 +113,7 @@ C$$$
       CHARACTER*500 BUFRTAB_PATH,FILI(NFILES),THIS_FILI
       CHARACTER*8   SUBSET
       CHARACTER*3   DUMMY_MSGS
-      REAL(8)       CDATE,DDATE
+      REAL(8)       XDATE,DDATE
       INTEGER(8)    LDATE_8,MDATE_8
       INTEGER       NCPY(NFILES)
       LOGICAL       COPY_DUMMY_MSGS
@@ -140,11 +140,11 @@ C----------------------------------------------------------------------
 C  Pgm expected to generate "Dummy" msgs containing center & dump times
 C  --------------------------------------------------------------------
 
-         READ(17,*,END=8,ERR=8) CDATE
+         READ(17,*,END=8,ERR=8) XDATE
          READ(17,*,END=8,ERR=8) DDATE
-         PRINT *,'REQUESTED CENTER DATE IS ... ',CDATE
+         PRINT *,'REQUESTED CENTER DATE IS ... ',XDATE
          PRINT *,'DUMP PROCESSING  DATE IS ... ',DDATE
-         LDATE_8 = INT(CDATE)*100_8 + NINT((CDATE-INT(CDATE))*60.)
+         LDATE_8 = INT(XDATE)*100_8 + NINT((XDATE-INT(XDATE))*60.)
          MDATE_8 = DDATE
          LMINS = MOD(LDATE_8,100_8)
          MMINS = MOD(MDATE_8,100_8)

@@ -4,16 +4,17 @@ set -eua
 #   This script originally written by Jack Woollen
 #
 
-[ $# -ne 5 ] && echo "$0 <siganl file> <cnvstat file> <prepbufr.in> <prepbufr.out> <date>"
+[ $# -ne 5 ] && echo "$0 <siganl file> <cnvstat file> <prepbufr.in> <prepbufr.out> <bdate>"
 [ $# -ne 5 ] && exit
 
-siganl=$1 cnvstat=$2 prepbufr=$3 preppost=$4 date=$5
+siganl=$1 cnvstat=$2 prepbufr=$3 preppost=$4 bdate=$5
 
 # fill in the analysis background with prevents
 
 DATA=`pwd` # working directory 
-PREP=prepbufr_in_old_post; cp $prepbufr $PREP
-$SIGEVENTSH $PREP $date 
+PREP=prepbufr_in_old_post
+cp $prepbufr $PREP
+$SIGEVENTSH $PREP $bdate
 
 prepbufr=$PREP # prepbufr into new post is prepbufr out of old post
 
@@ -39,8 +40,8 @@ else
    export CNVDIAGEXEC=$EXECcfs/${cfsp}post_convnetc.x
    for bak in ges anl  ; do
    for var in ps q t uv; do
-   ln -sf diag_conv_${var}_${bak}.$CDATE.nc4  diag_conv_${bak}_${var}
-   [[ -s diag_conv_${var}_${bak}.$CDATE.nc4 ]] || exit 99
+   ln -sf diag_conv_${var}_${bak}.${PDY}${cyc}.nc4  diag_conv_${bak}_${var}
+   [[ -s diag_conv_${var}_${bak}.${PDY}${cyc}.nc4 ]] || exit 99
    done; done
 fi
 

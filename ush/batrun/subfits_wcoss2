@@ -1,20 +1,25 @@
 #!/bin/bash
 set -eua
 
-EXPNAM=$1 CDATE=$2 ARCDIR=${ARCDIR:-$3} TMPDIR=${TMPDIR:-$4}
+EXPNAM=$1
+PDY=$2
+cyc=$3
+ARCDIR=${ARCDIR:-$4}
+TMPDIR=${TMPDIR:-$5}
 
 FITDIR=$(dirname $0); fitdir=$(cd $FITDIR/../batrun; pwd)
-LOGDIR=${LOGDIR:-$COMROT/logs/$CDATE}
+LOGDIR=${LOGDIR:-$COMROT/logs/${PDY}${cyc}}
 
 set +x
 echo -------------------------------------------------------------------------------------------------------------------
 echo Starting runfits: the following variables must be defined:
 echo -------------------------------------------------------------------------------------------------------------------
 echo "EXPNAM           " $EXPNAM            # argument 1 - experiment name    - required
-echo "CDATE            " $CDATE             # argument 2 - date of validation - required
+echo "PDY              " $PDY               # argument 2 - date of validation - required
+echo "cyc              " $cyc               # argument 3 - cycle of validation - required
 echo "ARCDIR           " $ARCDIR            # argument 4 - ARCDIR directory   - optional - defaults to $COMROT/archive
 echo "TMPDIR           " $TMPDIR            # argument 5 - TMPDIR directory   - optional - defaults to /ptmp/$USER/tmpdir
-echo "LOGDIR           " $LOGDIR            # inheirited - log directory      - optional - defaults to $COMROT/logs/$CDATE
+echo "LOGDIR           " $LOGDIR            # inheirited - log directory      - optional - defaults to $COMROT/logs/$PDY$cyc
 echo "FITDIR           " $FITDIR            # inheirited - Fit2obs batrun dir - optional - defaults to $(dirname $0)
 echo "ACCOUNT          " $ACCOUNT           # inheirited - project code       - required - defaults to nothing
 echo "COMIN_ANALYSIS   " $COMIN_ANALYSIS    # inheirited - analysis input     - required - defaults to nothing
@@ -29,8 +34,8 @@ nproc=3
 
 cat<<eof | qsub -
 #!/bin/bash
-#PBS -N FITS.$EXPNAM.$CDATE
-#PBS -o $LOGDIR/FITS.$EXPNAM.$CDATE.$$
+#PBS -N FITS.$EXPNAM.${PDY}${cyc}
+#PBS -o $LOGDIR/FITS.$EXPNAM.${PDY}${cyc}.$$
 #PBS -A $ACCOUNT
 #PBS -l select=1:ncpus=$nproc:mpiprocs=$nproc:mem=200GB
 #PBS -l walltime=${TIMELIM:-02:00:00}
@@ -39,8 +44,6 @@ cat<<eof | qsub -
 #PBS -V       
 
 set -euax  
-
-CDATE=$CDATE
 
 cd $PWD
 
@@ -74,7 +77,7 @@ export ARCDIR=$ARCDIR
 export TMPDIR=$TMPDIR
 export fitdir=$fitdir
 
-time $fitdir/runfits $EXPNAM $CDATE 
+time $fitdir/runfits $EXPNAM ${PDY} ${cyc}
 
 eof
 

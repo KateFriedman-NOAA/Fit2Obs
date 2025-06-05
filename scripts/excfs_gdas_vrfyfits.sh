@@ -45,9 +45,6 @@ echo "JOB $job HAS BEGUN"
 # make bufr convdiag postevents for analysis only...
 fh1=06
 fh2=00
-pdy=$(echo $CDATE | cut -c1-8)
-hh=$(echo $CDATE | cut -c9-10)
-cyc=$hh
 
 set +u
 eval COMIN_OBS=${COMIN_OBS:-$COMIN_ANALYSIS}
@@ -56,14 +53,14 @@ set -u
 
 if [[ $OUTPUT_FILETYPE = nemsio || $OUTPUT_FILETYPE = netcdf ]] ; then
   [[ $OUTPUT_FILETYPE = nemsio ]] && suffix=nemsio || suffix=nc
-  export PRPI=$COMIN_OBS/gdas.t${hh}z.prepbufr
-  export PRPO=$COMOUT_FITX/gdas.t${hh}z.prepqa
-  export PRPF=$COMOUT_FITX/gdas.t${hh}z.prepqf
-  export sig1=$COMIN_ANALYSIS/gdas.t${hh}z.atmanl.$suffix
-  export sfc1=$COMIN_ANALYSIS/gdas.t${hh}z.atmanl.$suffix
-  export CNVS=$COMIN_ANALYSIS/gdas.t${hh}z.cnvstat
+  export PRPI=$COMIN_OBS/gdas.t${cyc}z.prepbufr
+  export PRPO=$COMOUT_FITX/gdas.t${cyc}z.prepqa
+  export PRPF=$COMOUT_FITX/gdas.t${cyc}z.prepqf
+  export sig1=$COMIN_ANALYSIS/gdas.t${cyc}z.atmanl.$suffix
+  export sfc1=$COMIN_ANALYSIS/gdas.t${cyc}z.atmanl.$suffix
+  export CNVS=$COMIN_ANALYSIS/gdas.t${cyc}z.cnvstat
 elif [[ $OUTPUT_FILETYPE = cfs ]]; then
-  tzz=t${hh}z
+  tzz=t${cyc}z
   export PRPI=$COMIN_OBS/cdas1.$tzz.prepbufr
   export PRPO=$COMOUT/cdas1.$tzz.prepqa
   export PRPF=$COMOUT_FITX/cdas1.$tzz.prepqf
@@ -76,14 +73,14 @@ fi
 
 [ ${ACPROFit:-YES} != NO ] && PRPI=$($USHcfs/ACprof)
 
-$BUFRPOSTSH $sig1 $CNVS $PRPI $PRPO $CDATE
+$BUFRPOSTSH $sig1 $CNVS $PRPI $PRPO ${PDY}${cyc}
 
 [ "$CHGRP_RSTPROD" = 'YES' ] && chgrp rstprod $PRPO && chmod 640 $PRPO
 [ $SAVEPREP = YES          ] && cp $PRPO $ARCDIR/$(basename $PRPO).06.00
 [ $SAVEPREP = YES          ] && cp $PRPI $ARCDIR
 
-$FITSSH     $CDATE $PRPO $COMOUT_FITX $DATA 06 00
-$HORZSH     $CDATE $PRPO $COMOUT_FITX $DATA anl 2> horizout
+$FITSSH     ${PDY}${cyc} $PRPO $COMOUT_FITX $DATA 06 00
+$HORZSH     ${PDY}${cyc} $PRPO $COMOUT_FITX $DATA anl 2> horizout
 
 #################################################################
 # make prepqf file containing forecasts
@@ -91,7 +88,7 @@ $HORZSH     $CDATE $PRPO $COMOUT_FITX $DATA anl 2> horizout
 
 cp $PRPO $PRPF || exit 2
 
-if [ $hh = "00" -o $hh = "12" -o $hh = "06" -o $hh = "18" ] ; then
+if [ ${cyc} = "00" -o ${cyc} = "12" -o ${cyc} = "06" -o ${cyc} = "18" ] ; then
   fp1="fh1=12;fh2=36"
   fp2="fh1=24;fh2=48"
   fp3="fh1=60;fh2=84"
@@ -113,10 +110,10 @@ do
 
 [ $fh = xx ] && continue
 
-FDATE=$($NDATE -$fh $CDATE)
-fdy=$(echo $FDATE|cut -c 1-8)
-fzz=$(echo $FDATE|cut -c 9-10)
-eval COMIN_HISTORY=${COMIN_HISTORY}
+FDATE=$(date --utc +%Y%m%d%H -d "${PDY} ${cyc} - ${fh} hours")
+fdy=${FDATE:0:8}
+fzz=${FDATE:8:2}
+export COMIN_HISTORY="${COM_VRFYARCH:?}/${RUN:?}.${fdy}/${fzz}"
 
 if [[ $OUTPUT_FILETYPE = nemsio || $OUTPUT_FILETYPE = netcdf ]] ; then
   fhm3=$((fh-$tspan)); [ $fhm3 -lt 10 ] && fhm3=0$fhm3; [ $fhm3 -lt 100 ] && fhm3=0$fhm3
@@ -131,13 +128,13 @@ if [[ $OUTPUT_FILETYPE = nemsio || $OUTPUT_FILETYPE = netcdf ]] ; then
   export sfc2=$COMIN_HISTORY/gfs.$tzz.atmf$fh00.$suffix
   export sfc3=$COMIN_HISTORY/gfs.$tzz.atmf$fhp3.$suffix
 elif [[ $OUTPUT_FILETYPE = cfs ]]; then
-  CDAM3=$($NDATE -$tspan  $CDATE)
-  CDAP3=$($NDATE +$tspan  $CDATE)
+  CDAM3=$(date --utc +%Y%m%d%H -d "${PDY} ${cyc} - ${tspan} hours")
+  CDAP3=$(date --utc +%Y%m%d%H -d "${PDY} ${cyc} + ${tspan} hours")
   export sig1=$COMIN_HISTORY/sigf${CDAM3}.01.$FDATE
-  export sig2=$COMIN_HISTORY/sigf${CDATE}.01.$FDATE
+  export sig2=$COMIN_HISTORY/sigf${PDY}${cyc}.01.$FDATE
   export sig3=$COMIN_HISTORY/sigf${CDAP3}.01.$FDATE
   export sfc1=$COMIN_HISTORY/sfcf${CDAM3}.01.$FDATE
-  export sfc2=$COMIN_HISTORY/sfcf${CDATE}.01.$FDATE
+  export sfc2=$COMIN_HISTORY/sfcf${PDY}${cyc}.01.$FDATE
   export sfc3=$COMIN_HISTORY/sfcf${CDAP3}.01.$FDATE
 else
   echo $OUTPUT_FILETYPE = unknown OUTPUT_FILETYPE; exit 999
@@ -147,7 +144,9 @@ if [ -s $sig1 -a -s $sig2 -a -s $sig3 ] ; then
  [ -s $sfc1 -a -s $sfc2 -a -s $sfc3 ] && rsfc=t || rsfc=f
  [ $fh = $fh1 ] && echo  "&PREVDATA dofcst=t,nbax=3,span=$tspan,fits=t,rsfc=$rsfc /" >$PREC
  [ $fh = $fh2 ] && echo  "&PREVDATA doanls=t,nbax=3,span=$tspan,fits=t,rsfc=$rsfc /" >$PREC
- cp $PRPF prepqm; $SIGEVENTSH prepqm $CDATE; cp prepqm $PRPF 
+ cp $PRPF prepqm
+ $SIGEVENTSH prepqm ${PDY}${cyc}
+ cp prepqm $PRPF
 else
  [ $fh = $fh1 ] && fh1=xx
  [ $fh = $fh2 ] && fh2=xx
@@ -158,9 +157,9 @@ done # endi of inner loop over two forecast times
 if [ $fh1 != xx -o $fh2 != xx ] ; then
  [ "$CHGRP_RSTPROD" = 'YES' ] && chgrp rstprod $PRPF && chmod 640 $PRPF
  [ $SAVEPREP = YES          ] && cp $PRPF $ARCDIR/$(basename $PRPO).$fh1.$fh2
- $FITSSH $CDATE $PRPF $COMOUT_FITX $DATA $fh1 $fh2
- [ $hh = 00 -a $fh1 = 24 ] &&  $HORZSH $CDATE $PRPF $COMOUT_FITX $DATA fcs 2> horizout
- [ $hh = 12 -a $fh1 = 12 ] &&  $HORZSH $CDATE $PRPF $COMOUT_FITX $DATA fcs 2> horizout
+ $FITSSH ${PDY}${cyc} $PRPF $COMOUT_FITX $DATA $fh1 $fh2
+ [ ${cyc} = 00 -a $fh1 = 24 ] &&  $HORZSH ${PDY}${cyc} $PRPF $COMOUT_FITX $DATA fcs 2> horizout
+ [ ${cyc} = 12 -a $fh1 = 12 ] &&  $HORZSH ${PDY}${cyc} $PRPF $COMOUT_FITX $DATA fcs 2> horizout
 fi
 
 done # end of outer loop over multiple forecast times
@@ -174,20 +173,20 @@ set +e
 rm -f $COMOUT_FITX/fxx*
 
 mkdir -p $FIT_DIR
-cp $COMOUT_FITX/f*.raob.$CDATE  $FIT_DIR
-cp $COMOUT_FITX/f*.acft.$CDATE  $FIT_DIR
-cp $COMOUT_FITX/f*.acar.$CDATE  $FIT_DIR
-cp $COMOUT_FITX/f*.surf.$CDATE  $FIT_DIR
-cp $COMOUT_FITX/f*.sfc.$CDATE   $FIT_DIR
+cp $COMOUT_FITX/f*.raob.${PDY}${cyc}  $FIT_DIR
+cp $COMOUT_FITX/f*.acft.${PDY}${cyc}  $FIT_DIR
+cp $COMOUT_FITX/f*.acar.${PDY}${cyc}  $FIT_DIR
+cp $COMOUT_FITX/f*.surf.${PDY}${cyc}  $FIT_DIR
+cp $COMOUT_FITX/f*.sfc.${PDY}${cyc}   $FIT_DIR
 
 for typ in anl fcs
 do
 mkdir -p $HORZ_DIR/$typ   
-cp -p $COMOUT_FITX/adpupa.mand.$typ.$CDATE  $HORZ_DIR/$typ/adpupa.mand.$CDATE
-cp -p $COMOUT_FITX/adpsfc.$typ.$CDATE       $HORZ_DIR/$typ/adpsfc.$CDATE
-cp -p $COMOUT_FITX/sfcshp.$typ.$CDATE       $HORZ_DIR/$typ/sfcshp.$CDATE
-cp -p $COMOUT_FITX/aircar.$typ.$CDATE       $HORZ_DIR/$typ/aircar.$CDATE
-cp -p $COMOUT_FITX/aircft.$typ.$CDATE       $HORZ_DIR/$typ/aircft.$CDATE
+cp -p $COMOUT_FITX/adpupa.mand.$typ.${PDY}${cyc}  $HORZ_DIR/$typ/adpupa.mand.${PDY}${cyc}
+cp -p $COMOUT_FITX/adpsfc.$typ.${PDY}${cyc}       $HORZ_DIR/$typ/adpsfc.${PDY}${cyc}
+cp -p $COMOUT_FITX/sfcshp.$typ.${PDY}${cyc}       $HORZ_DIR/$typ/sfcshp.${PDY}${cyc}
+cp -p $COMOUT_FITX/aircar.$typ.${PDY}${cyc}       $HORZ_DIR/$typ/aircar.${PDY}${cyc}
+cp -p $COMOUT_FITX/aircft.$typ.${PDY}${cyc}       $HORZ_DIR/$typ/aircft.${PDY}${cyc}
 done
 
 ################## END OF SCRIPT #######################

@@ -48,13 +48,13 @@ qid=$$
 
 cd $DATA
 PRPI=$1; if [ ! -s $PRPI ] ; then exit 1 ;fi
-CDATE10=$2
+pdate=$2
 
 rm -f $PRPI.prevents
 rm -f prevents.filtering
 rm -f fort.* mpi.*
 
-echo "      $CDATE10" > cdate10.dat
+echo "      $pdate" > pdate.dat
 
 set +u
 [ -z "$sig1" ] || ln -sf $sig1   fort.20
@@ -70,7 +70,7 @@ set -u
 
 export FORT11=$PRPI
 export FORT14=$PRVT
-export FORT15=cdate10.dat
+export FORT15=pdate.dat
 export FORT17=$HYBLEVS
 export FORT51=$PRPI.prevents
 export FORT52=prevents.filtering
